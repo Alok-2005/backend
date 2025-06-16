@@ -1,0 +1,22 @@
+{
+  "name": "functions",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+   
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "firebase-functions": "^4.4.1",
+    "mongoose": "^8.15.2",
+    "pdfkit": "^0.17.1",
+    "twilio": "^5.7.1",
+    "url": "^0.11.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
