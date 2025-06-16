@@ -25,8 +25,8 @@ app.use(express.json());
 
 // Initialize Twilio client
 const twilioClient = Twilio(
-  'AC8dba743d63dfe475b23b19ebc564c82c',
-  '0b1f3f6d1dc9d8ddab9f907270132f50'
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
 );
 
 // WhatsApp Verify Route
