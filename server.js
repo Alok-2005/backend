@@ -2,14 +2,15 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Twilio from 'twilio';
 import PDFDocument from 'pdfkit';
-import { promises as fs } from 'fs';
+import { promises as fs, createWriteStream } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Payment from './models/payment.model.js';
-import {connectDb} from './models/db.js';
+import { connectDb } from './models/db.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
 // Initialize Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,9 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize Twilio client
 const twilioClient = Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-// MongoDB connection
-
 
 // WhatsApp Verify Route
 const whatsappVerify = async (req, res) => {
@@ -89,7 +87,7 @@ const whatsappVerify = async (req, res) => {
         const fileName = `receipt-${transactionId}.pdf`;
         const filePath = path.join(receiptsDir, fileName);
 
-        const writeStream = require('fs').createWriteStream(filePath);
+        const writeStream = createWriteStream(filePath);
         doc.pipe(writeStream);
         doc.end();
 
@@ -121,7 +119,7 @@ const whatsappVerify = async (req, res) => {
         try {
             await twilioClient.messages.create({
                 from: process.env.TWILIO_WHATSAPP_NUMBER,
-                to: params.From || 'whatsapp:+1234567890',
+                to: req.body.From || 'whatsapp:+1234567890',
                 body: 'An error occurred. Please try again later.',
             });
         } catch (sendError) {
@@ -165,4 +163,3 @@ app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
     connectDb();
 });
-
