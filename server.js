@@ -124,29 +124,77 @@ const whatsappVerify = async (req, res) => {
   }
 };
 
-// ✅ Updated Receipt Route
+// ✅ FIXED Receipt Route - Proper headers for Twilio WhatsApp
 const receiptGenerate = async (req, res) => {
   try {
     const { filename } = req.params;
+    
+    // Validate filename to prevent path traversal attacks
+    if (!filename || !filename.match(/^receipt-[a-zA-Z0-9_-]+\.pdf$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid filename' });
+    }
+    
     const filePath = path.join(__dirname, 'receipts', filename);
 
+    // Check if file exists
     await fs.access(filePath);
     const fileBuffer = await fs.readFile(filePath);
 
-    // ✅ Use inline content-disposition
+    // ✅ Set proper headers for Twilio WhatsApp compatibility
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline');
-
-    res.send(fileBuffer);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Content-Length', fileBuffer.length);
+    
+    // ✅ Additional headers for better compatibility
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // ✅ Handle range requests for better media delivery
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileBuffer.length - 1;
+      const chunksize = (end - start) + 1;
+      
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileBuffer.length}`);
+      res.setHeader('Content-Length', chunksize);
+      res.send(fileBuffer.slice(start, end + 1));
+    } else {
+      res.status(200);
+      res.send(fileBuffer);
+    }
+    
   } catch (error) {
     console.error('Error serving PDF:', error.message);
-    return res.status(404).json({ success: false, message: 'PDF not found' });
+    if (error.code === 'ENOENT') {
+      return res.status(404).json({ success: false, message: 'PDF not found' });
+    }
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
+// ✅ Alternative: Serve receipts directory statically with proper headers
+app.use('/api/receipts', express.static(path.join(__dirname, 'receipts'), {
+  setHeaders: (res, path, stat) => {
+    if (path.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${path.basename(path)}"`);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+  }
+}));
+
 // Routes
 app.post('/api/whatsapp/verify', whatsappVerify);
-app.get('/api/receipts/:filename', receiptGenerate);
+app.get('/api/receipts/:filename', receiptGenerate); // Keep this as backup
+
+// ✅ Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 // Start Server
 app.listen(port, () => {
