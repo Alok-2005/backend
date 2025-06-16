@@ -23,7 +23,7 @@ const __dirname = path.dirname(__filename);
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize Twilio client
-const twilioClient = Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const twilioClient = Twilio('AC8dba743d63dfe475b23b19ebc564c82c', '0b1f3f6d1dc9d8ddab9f907270132f50');
 
 // WhatsApp Verify Route
 const whatsappVerify = async (req, res) => {
@@ -40,7 +40,7 @@ const whatsappVerify = async (req, res) => {
         if (!transactionIdMatch) {
             console.error('No Transaction ID found in message:', message);
             await twilioClient.messages.create({
-                from: process.env.TWILIO_WHATSAPP_NUMBER,
+                from: '+14155238886',
                 to: from,
                 body: 'Invalid message format. Please include the Transaction ID.',
             });
@@ -55,7 +55,7 @@ const whatsappVerify = async (req, res) => {
         if (!payment) {
             console.error('Payment not found or not completed:', transactionId);
             await twilioClient.messages.create({
-                from: process.env.TWILIO_WHATSAPP_NUMBER,
+                from: '+14155238886',
                 to: from,
                 body: 'Payment not found or not completed. Please check your Transaction ID.',
             });
@@ -100,12 +100,12 @@ const whatsappVerify = async (req, res) => {
         console.log('PDF Generated:', filePath);
 
         // Generate URL for the PDF
-        const pdfUrl = `${process.env.PUBLIC_URL}/api/receipts/${fileName}`;
+        const pdfUrl = `https://iskconprojectbackend.onrender.com/api/receipts/${fileName}`;
         console.log('PDF URL:', pdfUrl);
 
         // Send PDF via Twilio
         await twilioClient.messages.create({
-            from: process.env.TWILIO_WHATSAPP_NUMBER,
+            from: '+14155238886',
             to: from,
             body: 'Here is your payment receipt.',
             mediaUrl: [pdfUrl],
@@ -118,7 +118,7 @@ const whatsappVerify = async (req, res) => {
         console.error('Error in WhatsApp webhook:', error.message, error.stack);
         try {
             await twilioClient.messages.create({
-                from: process.env.TWILIO_WHATSAPP_NUMBER,
+                from: '+14155238886',
                 to: req.body.From || 'whatsapp:+1234567890',
                 body: 'An error occurred. Please try again later.',
             });
