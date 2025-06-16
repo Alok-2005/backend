@@ -11,34 +11,32 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize Express app
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Get __dirname equivalent in ES modules
+// Get __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware to parse form data and JSON
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Initialize Twilio client
+// Twilio Client
 const twilioClient = Twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// WhatsApp Verify Route
+// WhatsApp Verification Route
 const whatsappVerify = async (req, res) => {
   try {
     const params = req.body;
     console.log('Twilio Webhook Body:', JSON.stringify(params, null, 2));
 
-    const from = params.From; // Sender's WhatsApp number
-    const message = params.Body; // Message content
+    const from = params.From;
+    const message = params.Body;
 
-    // Parse Transaction ID
     const transactionIdMatch = message.match(/Transaction ID: ([^\n]+)/);
     if (!transactionIdMatch) {
       console.error('No Transaction ID found in message:', message);
@@ -53,7 +51,6 @@ const whatsappVerify = async (req, res) => {
     const transactionId = transactionIdMatch[1].trim();
     console.log('Extracted Transaction ID:', transactionId);
 
-    // Verify payment
     const payment = await Payment.findOne({ transactionId, done: true });
     if (!payment) {
       console.error('Payment not found or not completed:', transactionId);
@@ -67,7 +64,6 @@ const whatsappVerify = async (req, res) => {
 
     console.log('Payment Found:', JSON.stringify(payment.toObject(), null, 2));
 
-    // Generate PDF
     const doc = new PDFDocument();
     const buffers = [];
     doc.on('data', buffers.push.bind(buffers));
@@ -128,7 +124,7 @@ const whatsappVerify = async (req, res) => {
   }
 };
 
-// Receipt Download Route
+// ✅ Updated Receipt Route
 const receiptGenerate = async (req, res) => {
   try {
     const { filename } = req.params;
@@ -137,10 +133,9 @@ const receiptGenerate = async (req, res) => {
     await fs.access(filePath);
     const fileBuffer = await fs.readFile(filePath);
 
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    });
+    // ✅ Use inline content-disposition
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
 
     res.send(fileBuffer);
   } catch (error) {
@@ -153,7 +148,7 @@ const receiptGenerate = async (req, res) => {
 app.post('/api/whatsapp/verify', whatsappVerify);
 app.get('/api/receipts/:filename', receiptGenerate);
 
-// Start server
+// Start Server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   connectDb();
