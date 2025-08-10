@@ -144,7 +144,7 @@ const whatsappVerify = async (req, res) => {
       console.error('Error saving PDF file:', err)
     );
 
-    const pdfUrl = `https://iskconprojectbackend.onrender.com/api/receipts/${fileName}`;
+    const pdfUrl = `https://backend-m133.onrender.com/api/receipts/${fileName}`;
     console.log('PDF URL:', pdfUrl, `Time: ${Date.now() - startTime}ms`);
 
     // ✅ Send message with media - don't wait for response
